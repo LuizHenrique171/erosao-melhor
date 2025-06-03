@@ -1,0 +1,474 @@
+!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Ecossistemas e Cidades</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #eef2f3;
+            color: #333;
+        }
+
+        h1 {
+            margin-top: 20px;
+            font-size: 2em;
+        }
+
+        p {
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            margin-bottom: 15px;
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        canvas {
+            border: 2px solid #444;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Simulador de Ambientes</h1>
+    <p>Escolha um ambiente e veja-o ganhar vida!</p>
+
+    <div class="controls">
+        <button id="btnModoNatureza">Natureza Viva</button>
+        <button id="btnModoSoloExposto">Terreno Árido</button>
+        <button id="btnModoUrbanizado">Cidade</button>
+        <button id="btnLimpar">Limpar Tudo</button>
+    </div>
+
+    <canvas id="myCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const btnModoNatureza = document.getElementById('btnModoNatureza');
+        const btnModoSoloExposto = document.getElementById('btnModoSoloExposto');
+        const btnModoUrbanizado = document.getElementById('btnModoUrbanizado');
+        const btnLimpar = document.getElementById('btnLimpar');
+
+        canvas.width = 700;
+        canvas.height = 400;
+
+        // --- Variáveis de Estado do Simulador ---
+        let modoAtual = 'natureza';
+        let elementosNatureza = [];
+        let elementosSoloExposto = [];
+        let elementosUrbanizado = [];
+        let animacaoAtiva = true;
+        let tempoSimulacao = 0; // Adiciona variável para controlar o tempo
+
+        // --- Event Listeners para os botões ---
+        btnModoNatureza.addEventListener('click', () => {
+            setModo('natureza');
+        });
+        btnModoSoloExposto.addEventListener('click', () => {
+            setModo('soloExposto');
+        });
+        btnModoUrbanizado.addEventListener('click', () => {
+            setModo('urbanizado');
+        });
+        btnLimpar.addEventListener('click', limparTudo);
+
+        // --- Funções de Controle de Modo e Limpeza ---
+        function setModo(novoModo) {
+            modoAtual = novoModo;
+            limparTudo();
+            tempoSimulacao = 0; // Reinicia o tempo ao mudar de modo
+            if (novoModo === 'natureza' && elementosNatureza.length === 0) {
+                gerarElementosIniciaisNatureza();
+            } else if (novoModo === 'soloExposto' && elementosSoloExposto.length === 0) {
+                gerarElementosIniciaisSoloExposto();
+            } else if (novoModo === 'urbanizado' && elementosUrbanizado.length === 0) {
+                gerarElementosIniciaisUrbanizado();
+            }
+        }
+
+        function limparTudo() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            elementosNatureza = [];
+            elementosSoloExposto = [];
+            elementosUrbanizado = [];
+            tempoSimulacao = 0; // Reinicia o tempo ao limpar tudo
+        }
+
+        // --- Funções de Geração de Elementos Iniciais ---
+        function gerarElementosIniciaisNatureza() {
+            const numArvores = 3 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < numArvores; i++) {
+                const x = Math.random() * (canvas.width - 100) + 50;
+                const y = canvas.height - 40;
+                elementosNatureza.push({
+                    tipo: 'arvore',
+                    x: x,
+                    y: y,
+                    tamanhoBase: 30 + Math.random() * 20,
+                    corTronco: ['#8B4513', '#A0522D', '#CD853F'][Math.floor(Math.random() * 3)],
+                    corFolhas: ['#228B22', '#32CD32', '#008000', '#6B8E23'][Math.floor(Math.random() * 4)],
+                    idade: 0,
+                    taxaCrescimento: 0.02 + Math.random() * 0.01
+                });
+            }
+            const numArbustos = 5 + Math.floor(Math.random() * 5);
+            for (let i = 0; i < numArbustos; i++) {
+                const x = Math.random() * canvas.width;
+                const y = canvas.height - 40 - (Math.random() * 10);
+                elementosNatureza.push({
+                    tipo: 'arbusto',
+                    x: x,
+                    y: y,
+                    tamanho: 10 + Math.random() * 15,
+                    cor: ['#556B2F', '#6B8E23', '#8FBC8F'][Math.floor(Math.random() * 3)],
+                    idade: 0,
+                    taxaCrescimento: 0.05 + Math.random() * 0.03
+                });
+            }
+        }
+
+        function gerarElementosIniciaisSoloExposto() {
+            const numCactos = 3 + Math.floor(Math.random() * 3);
+            for (let i = 0; i < numCactos; i++) {
+                const x = Math.random() * (canvas.width - 60) + 30;
+                const y = canvas.height - 50;
+                elementosSoloExposto.push({
+                    tipo: 'cacto',
+                    x: x,
+                    y: y,
+                    alturaBase: 30 + Math.random() * 20,
+                    larguraBase: 10 + Math.random() * 5,
+                    idade: 0,
+                    taxaCrescimento: 0.01 + Math.random() * 0.005
+                });
+            }
+            const numPedras = 10 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < numPedras; i++) {
+                const x = Math.random() * canvas.width;
+                const y = canvas.height - 50 + (Math.random() * 10);
+                elementosSoloExposto.push({
+                    tipo: 'pedra',
+                    x: x,
+                    y: y,
+                    raio: 5 + Math.random() * 15,
+                    cor: ['#808080', '#A9A9A9', '#696969'][Math.floor(Math.random() * 3)]
+                });
+            }
+        }
+
+        function gerarElementosIniciaisUrbanizado() {
+            let currentX = 0;
+            while (currentX < canvas.width) {
+                const larguraPredio = 50 + Math.random() * 80;
+                const alturaPredio = 50 + Math.random() * 150;
+                elementosUrbanizado.push({
+                    tipo: 'predio',
+                    x: currentX,
+                    y: canvas.height - 60,
+                    largura: larguraPredio,
+                    altura: alturaPredio,
+                    corPredio: ['#A9A9A9', '#778899', '#B0C4DE'][Math.floor(Math.random() * 3)],
+                    idade: 0,
+                    taxaCrescimento: 0.008 + Math.random() * 0.004
+                });
+                currentX += larguraPredio + (10 + Math.random() * 20);
+            }
+        }
+
+        // --- Funções de Desenho ---
+        function desenharArvore(arvore) {
+            const { x, y, tamanhoBase, corTronco, corFolhas, idade, taxaCrescimento } = arvore;
+            const tamanhoCrescido = tamanhoBase + idade * 0.5 + tempoSimulacao * taxaCrescimento;
+            const alturaTronco = tamanhoCrescido * (0.8 + Math.random() * 0.1);
+            const larguraTronco = tamanhoCrescido * (0.1 + Math.random() * 0.02);
+
+            ctx.fillStyle = corTronco;
+            ctx.fillRect(x - larguraTronco / 2, y - alturaTronco, larguraTronco, alturaTronco);
+
+            ctx.fillStyle = corFolhas;
+            const numNuvens = 3 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < numNuvens; i++) {
+                const offsetX = (Math.random() - 0.5) * larguraTronco * 3;
+                const offsetY = (Math.random() - 0.5) * alturaTronco * 0.4;
+                const raio = tamanhoCrescido * (0.3 + Math.random() * 0.1);
+                ctx.beginPath();
+                ctx.arc(x + offsetX, y - alturaTronco - raio / 2 + offsetY, raio, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function desenharArbusto(arbusto) {
+            const { x, y, tamanho, cor, idade, taxaCrescimento } = arbusto;
+            const tamanhoCrescido = tamanho + idade * 0.1 + tempoSimulacao * taxaCrescimento;
+
+            ctx.fillStyle = cor;
+            ctx.beginPath();
+            ctx.arc(x, y, tamanhoCrescido, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + tamanhoCrescido * 0.2, y + tamanhoCrescido * 0.2, tamanhoCrescido * 0.7, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fill();
+        }
+
+        function desenharFlor(x, y) {
+            const tamanho = 8 + Math.random() * 7;
+            const corPetala = '#' + (0x1000000 + Math.random() * 0xFFFFFF).toString(16).substr(1, 6);
+            const corMiolo = '#FFD700';
+
+            ctx.fillStyle = corPetala;
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.arc(x + Math.cos(i * Math.PI / 3) * tamanho,
+                    y + Math.sin(i * Math.PI / 3) * tamanho,
+                    tamanho * 0.6, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.fillStyle = corMiolo;
+            ctx.beginPath();
+            ctx.arc(x, y, tamanho * 0.4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function desenharChaoNatureza() {
+            ctx.fillStyle = '#7CFC00';
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+            const gradient = ctx.createLinearGradient(0, canvas.height - 40, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(124, 252, 0, 1)');
+            gradient.addColorStop(1, 'rgba(60, 179, 113, 1)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, canvas.height - 40, canvas.width, 40);
+        }
+
+        function desenharCenarioNatureza() {
+            desenharChaoNatureza();
+            elementosNatureza.forEach(el => {
+                if (el.tipo === 'arvore') desenharArvore(el);
+                if (el.tipo === 'arbusto') desenharArbusto(el);
+            });
+            const numFlores = 10 + Math.floor(Math.random() * 10);
+            for (let i = 0; i < numFlores; i++) {
+                const x = Math.random() * canvas.width;
+                const y = canvas.height - 30 - (Math.random() * 15);
+                desenharFlor(x, y);
+            }
+        }
+
+        function desenharCacto(cacto) {
+            const { x, y, alturaBase, larguraBase, idade, taxaCrescimento } = cacto;
+            const alturaCrescida = alturaBase + idade * 0.3 + tempoSimulacao * taxaCrescimento;
+            const larguraCrescida = larguraBase + idade * 0.1 + tempoSimulacao * taxaCrescimento * 0.5; // Largura cresce mais lentamente
+
+            const cor = '#556B2F';
+
+            ctx.fillStyle = cor;
+            ctx.fillRect(x - larguraCrescida / 2, y - alturaCrescida, larguraCrescida, alturaCrescida);
+
+            const numBrazos = Math.floor(Math.random() * 3);
+            for (let i = 0; i < numBrazos; i++) {
+                const bracoAltura = alturaCrescida * (0.3 + Math.random() * 0.3);
+                const bracoLargura = larguraCrescida * (0.6 + Math.random() * 0.2);
+                const bracoOffsetX = (Math.random() > 0.5 ? 1 : -1) * (larguraCrescida / 2 + bracoLargura / 2);
+                const bracoOffsetY = alturaCrescida * (0.3 + Math.random() * 0.4);
+
+                ctx.fillRect(x - larguraCrescida / 2 + bracoOffsetX, y - alturaCrescida + bracoOffsetY - bracoAltura, bracoLargura, bracoAltura);
+                ctx.fillRect(x - larguraCrescida / 2 + bracoOffsetX + bracoLargura / 4, y - alturaCrescida + bracoOffsetY - bracoAltura - bracoLargura / 2, bracoLargura / 2, bracoLargura / 2);
+            }
+        }
+
+        function desenharPedra(pedra) {
+            const { x, y, raio, cor } = pedra;
+            ctx.fillStyle = cor;
+            ctx.beginPath();
+            ctx.arc(x, y, raio, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + raio * 0.3, y + raio * 0.3, raio * 0.8, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(0,0,0,0.1)';
+            ctx.fill();
+        }
+
+        function desenharChaoDeserto() {
+            ctx.fillStyle = '#F4A460';
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+            const gradient = ctx.createLinearGradient(0, canvas.height - 50, 0, canvas.height);
+            gradient.addColorStop(0, 'rgba(244, 164, 96, 1)');
+            gradient.addColorStop(1, 'rgba(210, 105, 30, 1)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, canvas.height - 50, canvas.width, 50);
+        }
+
+        function desenharCenarioSoloExposto() {
+            desenharChaoDeserto();
+            elementosSoloExposto.forEach(el => {
+                if (el.tipo === 'cacto') desenharCacto(el);
+                if (el.tipo === 'pedra') desenharPedra(el);
+            });
+        }
+
+        function desenharPredio(predio) {
+            const { x, y, largura, altura, corPredio, idade, taxaCrescimento } = predio;
+            const alturaCrescida = altura + idade * 0.2 + tempoSimulacao * taxaCrescimento;
+
+            ctx.fillStyle = corPredio;
+            ctx.fillRect(x, y - alturaCrescida, largura, alturaCrescida);
+
+            const numJanelasX = Math.floor(largura / 20) - 1;
+            const numJanelasY = Math.floor(alturaCrescida / 30) - 1;
+            const corJanela = '#FFD700';
+            const luzesAcesas = Math.random() > 0.5;
+
+            for (let i = 0; i < numJanelasX; i++) {
+                for (let j = 0; j < numJanelasY; j++) {
+                    if (Math.random() < 0.7 || luzesAcesas) {
+                        ctx.fillStyle = corJanela;
+                    } else {
+                        ctx.fillStyle = '#555';
+                    }
+                    ctx.fillRect(x + 5 + i * (largura / numJanelasX - 5), y - alturaCrescida + 5 + j * (alturaCrescida / numJanelasY - 5), 10, 10);
+                }
+            }
+        }
+
+        function desenharCarro(x, y) {
+            const largura = 40;
+            const altura = 15;
+            const corCarro = '#' + (0x1000000 + Math.random() * 0xFFFFFF).toString(16).substr(1, 6);
+
+            ctx.fillStyle = corCarro;
+            ctx.fillRect(x, y - altura, largura, altura);
+            ctx.fillRect(x + 10, y - altura - 10, largura - 20, 10);
+
+            ctx.fillStyle = '#333';
+            ctx.beginPath();
+            ctx.arc(x + 10, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(x + largura - 10, y, 7, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function desenharRua() {
+            ctx.fillStyle = '#555';
+            ctx.fillRect(0, canvas.height - 60, canvas.width, 60);
+
+            ctx.fillStyle = '#FFF';
+            for (let i = 0; i < canvas.width; i += 40) {
+                ctx.fillRect(i, canvas.height - 35, 20, 5);
+            }
+        }
+
+        function desenharCenarioUrbanizado() {
+            ctx.fillStyle = '#87CEEB';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            desenharRua();
+
+            elementosUrbanizado.forEach(el => {
+                if (el.tipo === 'predio') desenharPredio(el);
+            });
+
+            const numCarros = 1 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < numCarros; i++) {
+                const x = (Date.now() / 20) % (canvas.width + 100) - 50;
+                const y = canvas.height - 20;
+                desenharCarro(x + i * 200, y);
+            }
+        }
+
+        // --- Loop Principal da Animação ---
+        let lastTime = 0;
+        const frameRate = 1000 / 60;
+
+        function animar(currentTime) {
+            if (!animacaoAtiva) return;
+
+            if (currentTime - lastTime > frameRate) {
+                lastTime = currentTime;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                tempoSimulacao += 1; // Incrementa o tempo
+
+                if (modoAtual === 'natureza') {
+                    desenharCenarioNatureza();
+                    elementosNatureza.forEach(el => {
+                        if (el.idade < 100) el.idade++;
+                    });
+                    if (Math.random() < 0.005) {
+                        const x = Math.random() * (canvas.width - 100) + 50;
+                        const y = canvas.height - 40;
+                        elementosNatureza.push({
+                            tipo: 'arvore',
+                            x: x,
+                            y: y,
+                            tamanhoBase: 20,
+                            corTronco: ['#8B4513', '#A0522D', '#CD853F'][Math.floor(Math.random() * 3)],
+                            corFolhas: ['#228B22', '#32CD32', '#008000', '#6B8E23'][Math.floor(Math.random() * 4)],
+                            idade: 0,
+                            taxaCrescimento: 0.02 + Math.random() * 0.01
+                        });
+                    }
+                    if (Math.random() < 0.01) {
+                        const x = Math.random() * canvas.width;
+                        const y = canvas.height - 40 - (Math.random() * 10);
+                        elementosNatureza.push({
+                            tipo: 'arbusto',
+                            x: x,
+                            y: y,
+                            tamanho: 5 + Math.random() * 10,
+                            cor: ['#556B2F', '#6B8E23', '#8FBC8F'][Math.floor(Math.random() * 3)],
+                            idade: 0,
+                            taxaCrescimento: 0.05 + Math.random() * 0.03
+                        });
+                    }
+                } else if (modoAtual === 'soloExposto') {
+                    desenharCenarioSoloExposto();
+                    elementosSoloExposto.forEach(el => {
+                        if (el.tipo === 'cacto' && el.idade < 80) el.idade++;
+                    });
+                    if (Math.random() < 0.003) {
+                        const x = Math.random() * (canvas.width - 60) + 30;
+                        const y = canvas.height - 50;
+                        elementosSoloExposto.push({
+                            tipo: 'cacto',
+                            x: x,
+                            y: y,
+                            alturaBase: 20,
+                            larguraBase: 10,
+                            idade: 0,
+                            taxaCrescimento: 0.01 + Math.random() * 0.005
+                        });
+                    }
+                } else if (modoAtual === 'urbanizado') {
+                    desenharCenarioUrbanizado();
+                    elementosUrbanizado.forEach(el => {
+                        if (el.tipo === 'predio' && el.altura < 300) el.altura += 0.1;
+                    });
+                }
+            }
+
+            requestAnimationFrame(animar);
+        }
+
+        // --- Início do Simulador ---
+        if (modoAtual === 'natureza') {
+            gerarElementosIniciaisNatureza();
+        } else if (modoAtual === 'soloExposto') {
+            gerarElementosIniciaisSoloExposto();
+        } else if (modoAtual === 'urbanizado') {
+            gerarElementosIniciaisUrbanizado();
+        }
+
+        requestAnimationFrame(animar);
+    </script>
+</body>
+</html>
